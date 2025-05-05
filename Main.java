@@ -1,5 +1,12 @@
 import java.util.Scanner;
 
+
+/* Possible Bonus Points (10 Pts Each):
+ *   Deadlock Handling
+ *     - Implement deadlock detection or avoidance
+ *   Virtual Paging & Memory Visualization
+ *   GUI Interface
+ */
 public class Main {
     /**
      * Create a process
@@ -56,7 +63,7 @@ public class Main {
             }
 
         }
-        
+
         // Close the input stream
         input.close();
     }
