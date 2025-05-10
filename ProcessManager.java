@@ -14,7 +14,7 @@ public class ProcessManager {
      * @param name The process name
      */
     public void createProcess(String name) {
-        queue.add(new PCB(++ nextPid, name, "READY"));
+        queue.add(new PCB(nextPid ++, name, "READY"));
     }
 
     /**
