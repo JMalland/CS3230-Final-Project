@@ -1,14 +1,14 @@
-public class Semaphore {
+public class Semaphore2 {
 
     private boolean[] buffer;
 
     // Semaphore with a single lock
-    public Semaphore() {
+    public Semaphore2() {
         buffer = new boolean[1];
     }
 
     // Semaphore with multiple locks
-    public Semaphore(int number) {
+    public Semaphore2(int number) {
         buffer = new boolean[number];
     }
 
