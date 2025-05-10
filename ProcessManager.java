@@ -3,7 +3,7 @@ import java.util.ArrayList;
 public class ProcessManager {
 
     private ArrayList<PCB> queue;
-    private int nextPid = 0;
+    private int nextPid = 1;
 
     public ProcessManager() {
         queue = new ArrayList<>();
