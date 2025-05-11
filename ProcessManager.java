@@ -1,9 +1,6 @@
 import java.util.ArrayList;
 
-public class ProcessManager {
-    // The time of program execution
-    private static final long startTime = System.currentTimeMillis();
-    
+public class ProcessManager {    
     // Queue to hold all created processes
     private ArrayList<PCB> queue;
     // The PID given to the next process
@@ -11,13 +8,6 @@ public class ProcessManager {
 
     public ProcessManager() {
         queue = new ArrayList<>();
-    }
-
-    /**
-     * @return The age of the ProcessManager 
-     */
-    private static final long age() {
-        return System.currentTimeMillis() - startTime;
     }
 
     /**
@@ -53,15 +43,39 @@ public class ProcessManager {
     }
 
     /**
+     * Block a process from execution
+     * @param pid The process ID
+     */
+    public void blockProcess(int pid) {
+        if (queue.size() < pid) {
+            System.out.println("Invalid process ID");
+            return;
+        }
+
+        // Set process to blocked state
+        queue.get(pid - 1).setState(PCB.State.BLOCKED);
+    }
+
+    /**
+     * Allow a process to execute
+     * @param pid The process ID
+     */
+    public void readyProcess(int pid) {
+        if (queue.size() < pid) {
+            System.out.println("Invalid process ID");
+            return;
+        }
+
+        // Set process to ready state
+        queue.get(pid - 1).setState(PCB.State.READY);
+    }
+
+    /**
      * Display all processes and their states
      */
     public void listProcesses() {
-        // Clone the queue, and sort by PID
-        ArrayList<PCB> copyQueue = new ArrayList<>(queue);
-        copyQueue.sort((a, b) -> Integer.compare(a.getPid(), b.getPid()));
-
         // Go through each process, and print its info
-        for (PCB process : copyQueue) {
+        for (PCB process : queue) {
             System.out.println(process);
         }
     }
