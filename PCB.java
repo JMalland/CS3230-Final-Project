@@ -1,7 +1,7 @@
 public class PCB {
     private int pid;
     private String name;
-    private String state; // READY, RUNNING, BLOCKED
+    private State state; // READY, RUNNING, BLOCKED
     private boolean active = false;
 
     /**
@@ -10,10 +10,16 @@ public class PCB {
      * @param name The process name
      * @param state The process state
      */
-    public PCB(int pid, String name, String state) {
+    public PCB(int pid, String name, State state) {
         this.pid = pid;
         this.name = name;
         this.state = state;
+    }
+
+    public static enum State {
+        READY,
+        RUNNING,
+        BLOCKED;
     }
 
     public int getPid() {
@@ -24,11 +30,24 @@ public class PCB {
         return this.name;
     }
 
-    public String getState() {
+    public State getState() {
         return this.state;
+    }
+
+    public void setState(State state) {
+        this.state = state;
     }
 
     public boolean isActive() {
         return this.active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    @Override
+    public String toString() {
+        return("PID" + pid + " [" + name + "] : " + this.state);
     }
 }
