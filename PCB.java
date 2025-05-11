@@ -48,6 +48,6 @@ public class PCB {
 
     @Override
     public String toString() {
-        return("PID" + pid + " [" + name + "] : " + this.state);
+        return("PID " + pid + " [" + name + "] : " + this.state);
     }
 }
