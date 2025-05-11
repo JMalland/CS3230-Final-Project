@@ -166,7 +166,6 @@ public class MemoryManager {
             // Change the memory list to reflect the held memory block
             setBlock(pid, lastAllocation);
 
-
             semaphore.signal();
 
             return true;
@@ -223,13 +222,13 @@ public class MemoryManager {
         }
 
         // Remove each memory block from the process 
-        for (int i=0; i<heldMemory.size(); i++) {
+        while (heldMemory.size() > 0) {
             // Sort the free memory so each block is in order
             // i.e. (0, 5), (5, 8), (8, 12)
             freeMemory.sort((a, b) -> Integer.compare(a.start(), b.start()));
 
             // A block of memory (no-longer) held by the process
-            Block heldBlock = heldMemory.remove(i);
+            Block heldBlock = heldMemory.remove(0);
 
             // Change the memory list to reflect the held memory as freed
             setBlock(0, heldBlock);
