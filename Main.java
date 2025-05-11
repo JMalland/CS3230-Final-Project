@@ -44,7 +44,31 @@ public class Main {
                     int size = Integer.parseInt(line.split(" ", 4)[2]);
 
                     // Attempt to allocate memory
-                    memoryMgr.allocate(pid, size);
+                    boolean attempt = memoryMgr.allocate(pid, size);
+
+                    if (attempt) {
+                        // Allow the process to execute
+                        processMgr.readyProcess(pid);
+
+                        System.out.println("Allocated " + size + " bytes to " + pid);
+                    }
+                    // The memory allocation failed
+                    // Ask about terminating the process
+                    else {
+                        System.out.print("Terminate process " + pid + "? (y/n) ");
+                        String answer = input.nextLine().trim();
+
+                        // The client said yes
+                        if (answer.toLowerCase().startsWith("y")) {
+                            memoryMgr.free(pid);
+                        }
+
+                        // The process has no memory allocated to it
+                        if (!memoryMgr.hasAllocation(pid)) {
+                            // Block the process from execution
+                            processMgr.blockProcess(pid);
+                        }
+                    }
                     break;
                 // Display memory information
                 case("mem"):

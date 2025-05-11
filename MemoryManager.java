@@ -35,7 +35,26 @@ public class MemoryManager {
     }
 
     /**
+     * Get the total memory held by a process (PID 0 == free memory)
+     * For proper practices, should only be called within a function holding the semaphore lock
+     * @param pid The process ID
+     * @return Number of bytes held by the process
+     */
+    private int getTotalMemory(int pid) {
+        int total = 0;
+
+        // Add the size of each block
+        for (Block block : table.get(pid)) {
+            total += block.size();
+        }
+
+        // Return the sum
+        return total;
+    }
+
+    /**
      * Point a block of memory to a process
+     * For proper practices should only be called within a function holding the semaphore lock
      * @param pid The process ID
      * @param block The memory block
      */
@@ -54,19 +73,31 @@ public class MemoryManager {
      * @param size The processes memory size
      * @throws InterruptedException 
      */
-    public void allocate(int pid, int size) throws InterruptedException {
+    public boolean allocate(int pid, int size) throws InterruptedException {
         // The allocation request is too large
         if (size > memory.length) {
             System.out.println("Cannot fullfill allocation request: Memory Index Out of Bounds");
-            return;
+            return false;
         }
 
         // Acquire the semaphore lock
         semaphore.waitSem();
 
+        // There isn't enough available memory to allocate
+        if (getTotalMemory(0) < size) {
+            System.out.println("Failed to allocate memory: Out of Memory");
+
+            // Release the semaphore lock
+            semaphore.signal();
+            return false;
+        }
+
         // Get all blocks of free memory
         ArrayList<Block> freeMemory = table.get(0);
-
+        
+        // Create the allocation list for the process
+        table.putIfAbsent(pid, new ArrayList<Block>());
+        
         // Store the best fitting Block, for this allocation
         // Initially none
         Block bestFit = null;
@@ -79,34 +110,62 @@ public class MemoryManager {
                 bestFit = freeBlock;
             }
         }
-
-        // No suitable block was found
-        // Free this processes held memory, and request one large allocation
+        
+        // No single best-fit block was found
+        // Find however many blocks, from largest to smallest needed to allocate memory
         if (bestFit == null) {
-            System.out.println("Could not allocate memory.");
-            // // Calculate the total memory needed for this process
-            // int needed = 0;
-            // // Go through each held block and add its size
-            // for (Block heldBlock : table.get(pid)) {
-            //     needed += heldBlock.size();
-            // }
+            // Sort the free memory by size; largest blocks to smallest blocks
+            freeMemory.sort((a, b) -> Integer.compare(a.size(), b.size()));
+            
+            // The number of blocks that will be taken from available memory to allocate the requested size
+            // Sublist of freeMemory from index 0 to 'blocks - 1'
+            int blocks = 0;
+            // The combined size of the blocks to be taken
+            int totalSize = 0;
 
-            // // The needed cumulative memory for this process
-            // size += needed;
+            // Iterate in order, by largest to smallest block
+            for (Block block : freeMemory) {
+                // Increment number of blocks by 1
+                blocks += 1;
 
-            // // Release the semaphore lock before calling free and waiting
-            // semaphore.signal();
+                // Increment total size by block size
+                totalSize += block.size();
 
-            // // Release all memory held by the process
-            // this.free(pid);
+                // The memory allocation has been found
+                if (totalSize >= size) {
+                    break;
+                }
+            }
+            
+            // Allocate all blocks that leave no holes
+            for (int i=0; i<blocks - 1; i++) {
+                // Remove the block from available memory
+                Block block = freeMemory.remove(i);
+                // Add the block to the processes held memory
+                table.get(pid).add(block);
+            }
+
+            // Remove the last block
+            Block lastBlock = freeMemory.remove(blocks - 1);
+
+            // There is a hole left over
+            if (totalSize - size > 0) {
+                // Add the hole back to the free memory
+                Block hole = new Block(lastBlock.start() + (totalSize - size), lastBlock.end());
+                freeMemory.add(hole);
+            }
+
+            // Add the last block to the held memory
+            table.get(pid).add(new Block(lastBlock.start(), lastBlock.start() + (totalSize - size)));
+
+            semaphore.signal();
+
+            return true;
         }
 
         // Remove the best-fit block from the table
         // because we will break it into two blocks
         table.get(0).remove(bestFit);
-
-        // Create the allocation list for the process
-        table.putIfAbsent(pid, new ArrayList<Block>());
 
         // Create the smallest block to hold the allocation.
         Block allocated = new Block(bestFit.start(), bestFit.start() + size);
@@ -126,6 +185,8 @@ public class MemoryManager {
 
         // Release the semaphore lock
         semaphore.signal();
+
+        return true;
     }
 
     /**
@@ -199,6 +260,29 @@ public class MemoryManager {
 
         // Release the semaphore lock
         semaphore.signal();
+    }
+
+    /**
+     * Check if a process has memory allocated to it
+     * @param pid The process ID
+     * @return True if a process has allocated memory; False, otherwise
+     * @throws InterruptedException 
+     */
+    public boolean hasAllocation(int pid) throws InterruptedException {
+        try {
+            // Acquire the semaphore lock
+            semaphore.waitSem();
+
+            // Return the allocation comparison
+            return getTotalMemory(pid) > 0;
+        }
+        catch (Exception e) {
+            return false;
+        }   
+        finally {
+            // Release the semaphore lock
+            semaphore.signal();
+        }
     }
 
     /**
