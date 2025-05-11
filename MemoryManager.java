@@ -115,7 +115,7 @@ public class MemoryManager {
         // Find however many blocks, from largest to smallest needed to allocate memory
         if (bestFit == null) {
             // Sort the free memory by size; largest blocks to smallest blocks
-            freeMemory.sort((a, b) -> Integer.compare(a.size(), b.size()));
+            freeMemory.sort((a, b) -> Integer.compare(b.size(), a.size()));
             
             // The number of blocks that will be taken from available memory to allocate the requested size
             // Sublist of freeMemory from index 0 to 'blocks - 1'
@@ -137,26 +137,35 @@ public class MemoryManager {
                 }
             }
             
+            // Remove the last block
+            Block lastBlock = freeMemory.remove(blocks - 1);
+            
             // Allocate all blocks that leave no holes
             for (int i=0; i<blocks - 1; i++) {
                 // Remove the block from available memory
                 Block block = freeMemory.remove(i);
                 // Add the block to the processes held memory
                 table.get(pid).add(block);
+                // Change the memory list to reflect the held memory block
+                setBlock(pid, block);
             }
-
-            // Remove the last block
-            Block lastBlock = freeMemory.remove(blocks - 1);
 
             // There is a hole left over
             if (totalSize - size > 0) {
                 // Add the hole back to the free memory
-                Block hole = new Block(lastBlock.start() + (totalSize - size), lastBlock.end());
+                Block hole = new Block(lastBlock.end() - (totalSize - size), lastBlock.end());
                 freeMemory.add(hole);
             }
 
-            // Add the last block to the held memory
-            table.get(pid).add(new Block(lastBlock.start(), lastBlock.start() + (totalSize - size)));
+            // The final block to be allocated to the process
+            Block lastAllocation = new Block(lastBlock.start(), lastBlock.end() - (totalSize - size));
+            
+            // Add the last allocation block to the held memory
+            table.get(pid).add(lastAllocation);
+
+            // Change the memory list to reflect the held memory block
+            setBlock(pid, lastAllocation);
+
 
             semaphore.signal();
 
