@@ -1,7 +1,7 @@
 /**
  * Created a Range class to represent indexed memory blocks.
  */
-public class Range {
+public class Block {
     private int start, end;
 
     /**
@@ -10,7 +10,7 @@ public class Range {
      * @param start The start index
      * @param end The end index (exclusive)
      */
-    public Range(int start, int end) {
+    public Block(int start, int end) {
         this.start = start;
         this.end = end;
     }

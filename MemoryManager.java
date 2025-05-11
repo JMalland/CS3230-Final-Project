@@ -3,7 +3,7 @@ import java.util.HashMap;
 
 /**
  * What I'm currently thinking would be best to implement MemoryManager, is to store each RAM
- * allocation (Range) as a list within a HashMap, per each PID, with 0 being free. If the client 
+ * allocation (Block) as a list within a HashMap, per each PID, with 0 being free. If the client 
  * allocates more RAM to a process than currently free, release the memory in-use, and wait.
  */
 public class MemoryManager {
@@ -12,7 +12,7 @@ public class MemoryManager {
 
     // Used a fixed-size array to simulate memory blocks
     private int[] memory;
-    private HashMap<Integer, ArrayList<Range>> table;
+    private HashMap<Integer, ArrayList<Block>> table;
     private Semaphore2 semaphore = new Semaphore2();
 
     public MemoryManager(int maxBytes) throws InterruptedException {
@@ -22,13 +22,13 @@ public class MemoryManager {
         // Initialize the memory
         memory = new int[maxBytes];
 
-        // Initialize the HashMap<PID, List<Range>>
+        // Initialize the HashMap<PID, List<Block>>
         table = new HashMap<>();
 
         // Add the free memory (PID == 0)
-        table.putIfAbsent(0, new ArrayList<Range>());
+        table.putIfAbsent(0, new ArrayList<Block>());
         // Record the initial free memory
-        table.get(0).add(new Range(0, maxBytes));
+        table.get(0).add(new Block(0, maxBytes));
 
         // Release the semaphore lock
         semaphore.signal();
@@ -39,7 +39,7 @@ public class MemoryManager {
      * @param pid The process ID
      * @param block The memory block
      */
-    private void setBlock(int pid, Range block) {
+    private void setBlock(int pid, Block block) {
         // Go through each byte in the block
         for (int i=block.start(); i<block.end(); i++) {
             // Set the byte held by PID
@@ -65,14 +65,14 @@ public class MemoryManager {
         semaphore.waitSem();
 
         // Get all blocks of free memory
-        ArrayList<Range> freeMemory = table.get(0);
+        ArrayList<Block> freeMemory = table.get(0);
 
-        // Store the best fitting range, for this allocation
+        // Store the best fitting Block, for this allocation
         // Initially none
-        Range bestFit = null;
+        Block bestFit = null;
 
         // Go through each block of free memory
-        for (Range freeBlock : freeMemory) {
+        for (Block freeBlock : freeMemory) {
             // The block is large enough, and is the smallest block yet found
             if (freeBlock.size() >= size && (bestFit == null || freeBlock.size() < bestFit.size())) {
                 // Save the smallest available block
@@ -87,7 +87,7 @@ public class MemoryManager {
             // // Calculate the total memory needed for this process
             // int needed = 0;
             // // Go through each held block and add its size
-            // for (Range heldBlock : table.get(pid)) {
+            // for (Block heldBlock : table.get(pid)) {
             //     needed += heldBlock.size();
             // }
 
@@ -106,10 +106,10 @@ public class MemoryManager {
         table.get(0).remove(bestFit);
 
         // Create the allocation list for the process
-        table.putIfAbsent(pid, new ArrayList<Range>());
+        table.putIfAbsent(pid, new ArrayList<Block>());
 
         // Create the smallest block to hold the allocation.
-        Range allocated = new Range(bestFit.start(), bestFit.start() + size);
+        Block allocated = new Block(bestFit.start(), bestFit.start() + size);
 
         // Add the allocated block to the table for the process
         table.get(pid).add(allocated);
@@ -119,7 +119,7 @@ public class MemoryManager {
         
         // The best fit block will have a hole of free memory left over
         if (bestFit.size() > size) {
-            Range hole = new Range(bestFit.start() + size, bestFit.end());
+            Block hole = new Block(bestFit.start() + size, bestFit.end());
             // Add the hole back into the table
             table.get(0).add(hole);
         }
@@ -138,12 +138,12 @@ public class MemoryManager {
         semaphore.waitSem();
 
         // Get the free memory allocation list
-        ArrayList<Range> freeMemory = table.get(0);
+        ArrayList<Block> freeMemory = table.get(0);
 
         // Insert allocation list, if none exists
-        table.putIfAbsent(pid, new ArrayList<Range>());
+        table.putIfAbsent(pid, new ArrayList<Block>());
         // Get the processes memory allocation list
-        ArrayList<Range> heldMemory = table.get(pid);
+        ArrayList<Block> heldMemory = table.get(pid);
 
         // The process isn't holding any memory
         if (heldMemory.size() == 0) {
@@ -159,7 +159,7 @@ public class MemoryManager {
             freeMemory.sort((a, b) -> Integer.compare(a.start(), b.start()));
 
             // A block of memory (no-longer) held by the process
-            Range heldBlock = heldMemory.remove(i);
+            Block heldBlock = heldMemory.remove(i);
 
             // Change the memory list to reflect the held memory as freed
             setBlock(0, heldBlock);
@@ -167,7 +167,7 @@ public class MemoryManager {
             // Go through each block of free memory and attempt to merge with released held memory
             for (int j=0; j<freeMemory.size() - 1; j++) {
                 // A block of free memory
-                Range freeBlock = freeMemory.get(j);
+                Block freeBlock = freeMemory.get(j);
 
                 // No remaining free blocks can be connected to the held block
                 if (freeBlock.start() > heldBlock.start()) {
@@ -177,7 +177,7 @@ public class MemoryManager {
                 // The held memory block is connected to a free memory block
                 if (freeBlock.end() == heldBlock.start() || heldBlock.end() == freeBlock.start()) {
                     // Merge the free block and the held block
-                    Range mergedBlock = new Range(Math.min(freeBlock.start(), heldBlock.start()), Math.max(heldBlock.end(), freeBlock.end()));
+                    Block mergedBlock = new Block(Math.min(freeBlock.start(), heldBlock.start()), Math.max(heldBlock.end(), freeBlock.end()));
                     
                     // Replace the free memory block with the two blocks merged
                     freeMemory.set(j, mergedBlock);
