@@ -34,8 +34,22 @@ public class ProcessManager {
      * Simulate Round-Robin or other CPU scheduling algorithms
      * @throws InterruptedException 
      */
-    public void schedule() {
+    public void schedule() throws InterruptedException {
+        for (PCB process : queue) {
+            // The process is ready for execution
+            if (process.getState() == PCB.State.READY) {
+                // Execute this process
+                process.setState(PCB.State.RUNNING);
+                
+                System.out.println("Running: " + process);
 
+                // Simulate running time for 5 seconds
+                Thread.sleep((int) (5000 * Math.random()));
+
+                // Reset the process to READY
+                process.setState(PCB.State.READY);
+            }
+        }
     }
 
     /**
