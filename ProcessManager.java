@@ -1,6 +1,6 @@
 import java.util.ArrayList;
 
-public class ProcessManager {    
+public class ProcessManager {
     // Queue to hold all created processes
     private ArrayList<PCB> queue;
     // The PID given to the next process
@@ -12,17 +12,19 @@ public class ProcessManager {
 
     /**
      * Create a new process
+     * 
      * @param name The process name
      */
     public void createProcess(String name) {
-        queue.add(new PCB(nextPid ++, name, PCB.State.BLOCKED));
+        queue.add(new PCB(nextPid++, name, PCB.State.READY)); // Updated to Ready Instead of Blocked - Hoyt Brem
         System.out.println("Created new process: [" + name + "]");
     }
 
     /**
      * Print each READY process as RUNNING
      * Simulate Round-Robin or other CPU scheduling algorithms
-     * @throws InterruptedException 
+     * 
+     * @throws InterruptedException
      */
     public void schedule() throws InterruptedException {
         for (PCB process : queue) {
@@ -30,7 +32,7 @@ public class ProcessManager {
             if (process.getState() == PCB.State.READY) {
                 // Execute this process
                 process.setState(PCB.State.RUNNING);
-                
+
                 System.out.println("Running: " + process);
 
                 // Simulate running time for 5 seconds
@@ -44,6 +46,7 @@ public class ProcessManager {
 
     /**
      * Block a process from execution
+     * 
      * @param pid The process ID
      */
     public void blockProcess(int pid) {
@@ -58,6 +61,7 @@ public class ProcessManager {
 
     /**
      * Allow a process to execute
+     * 
      * @param pid The process ID
      */
     public void readyProcess(int pid) {
